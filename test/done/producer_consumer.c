@@ -1,8 +1,6 @@
-/**
- * Write a C program to simulate
- * producer - consumers' problem
+/*
+ * Producer - Consumer
  */
-
 #include <stdio.h>
 #include <stdlib.h>
 #include <unistd.h>
@@ -10,32 +8,27 @@
 #include <setjmp.h>
 
 #define MAX 5
-jmp_buf env;
-int sval;
+jmp_buf jbuf;
+int ch;
 
 int
 	buffer[MAX],
 	in = 0,
 	out = 0,
+	count = 0,
 	full = 0,
 	empty = MAX,
-	mutex = 1,
-	item = 0;
+	mutex = 1;
 
 void
 wait(int *s) {
 	if (
-		(sval == 0
-		&& empty == 0)
-		||
-		(sval == 1
-		 && full == 0)
-	   ) {
-		longjmp(env, 0);
+		(ch == 0 && empty == 0)	
+		|| (ch == 1 && full == 0)
+	) {
+		longjmp(jbuf, 0);
 	}
-	while( (*s) <= 0 ) {
-		/* Spinlock */
-	}
+	while ((*s) <= 0){}
 	(*s)--;
 }
 
@@ -49,8 +42,8 @@ produce() {
 	wait(&mutex);
 	wait(&empty);
 
-	buffer[in] = item++;
-	printf("Produced %d at %d\n", buffer[in], in);
+	buffer[in] = count++;
+	printf("Produced %d at %d.\n", buffer[in], in);
 	in = (1 + in) % MAX;
 
 	signal(&full);
@@ -62,7 +55,7 @@ consume() {
 	wait(&mutex);
 	wait(&full);
 
-	printf("Consumed %d at %d\n", buffer[out], out);
+	printf("Consumed %d at %d.\n", buffer[out], out);
 	out = (1 + out) % MAX;
 
 	signal(&empty);
@@ -71,12 +64,12 @@ consume() {
 
 int
 main() {
-	srand(time(0));
+	srand(time(NULL));
 	for(;;) {
-		setjmp(env);
+		setjmp(jbuf);
 		sleep(1);
-		sval = rand() %2;
-		switch (sval) {
+		ch = rand() % 2;
+		switch (ch) {
 			case 0:
 				produce();
 				break;
